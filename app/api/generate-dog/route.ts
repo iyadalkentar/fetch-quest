@@ -4,7 +4,7 @@ import { generatePortrait, generateBioTaunt } from '@/lib/googleAi';
 
 export async function POST(request: Request) {
   try {
-    // Manual QA hook for testing the failure path since AI calls are currently stubbed.
+    // Manual QA hook for testing the failure/fallback path without needing a bad API key.
     // Can be exercised via curl: POST /api/generate-dog?simulateFailure=true
     const url = new URL(request.url);
     const simulateFailure = url.searchParams.get('simulateFailure') === 'true';
@@ -12,7 +12,7 @@ export async function POST(request: Request) {
     // Roll the dog's stats and personality
     const rolledDog = rollDog();
 
-    // Generate portrait and bio/taunt (these are stubs for now)
+    // Generate portrait and bio/taunt via Google AI
     let portraitUrl: string;
     let bio: string;
     let generationFailed = false;
