@@ -13,7 +13,7 @@ its animation/transition pass before we move on, not as a final catch-up step.
 - Base layout, routing shell for the single-page flow (generate → mint →
   fight → result as views/steps within one page, not separate routes).
 
-## Phase 1 — Slice: Generate a dog
+## Phase 1 — Slice: Generate a dog ✅ Complete
 
 - Stat/personality roll logic (Speed, Bark, Chomp, personality tag).
 - `/api/generate-dog` calling Google AI for portrait + bio/taunt.
