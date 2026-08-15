@@ -6,7 +6,7 @@ keeps something demoable at every checkpoint instead of a big-bang integration
 at the end, and matches the "polish over breadth" mission — each slice gets
 its animation/transition pass before we move on, not as a final catch-up step.
 
-## Phase 0 — Scaffold
+## Phase 0 — Scaffold ✅ Complete
 
 - Next.js + TypeScript + Tailwind project init.
 - `.env.local.example` with the three key placeholders from the README.
