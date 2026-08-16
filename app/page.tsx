@@ -1,11 +1,19 @@
 'use client';
 
 import { useState } from 'react';
+import dynamic from 'next/dynamic';
 import { Dog } from '@/lib/dog';
 import GenerateStep from './components/GenerateStep';
 import MintStep from './components/MintStep';
 import FightStep from './components/FightStep';
 import ResultStep from './components/ResultStep';
+
+// Loaded on demand: the wallet-adapter bundle is only needed once the user
+// reaches Mint, not on first paint of the Generate step.
+const WalletContextProvider = dynamic(
+  () => import('./components/WalletContextProvider'),
+  { ssr: false }
+);
 
 type Step = 'generate' | 'mint' | 'fight' | 'result';
 
@@ -28,7 +36,11 @@ export default function Home() {
             onDogGenerated={setGeneratedDog}
           />
         )}
-        {currentStep === 'mint' && <MintStep onNext={handleNextStep} />}
+        {currentStep === 'mint' && (
+          <WalletContextProvider>
+            <MintStep onNext={handleNextStep} dog={generatedDog} />
+          </WalletContextProvider>
+        )}
         {currentStep === 'fight' && <FightStep onNext={handleNextStep} />}
         {currentStep === 'result' && <ResultStep onNext={handleNextStep} />}
       </main>
