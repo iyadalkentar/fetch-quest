@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import dynamic from 'next/dynamic';
 import { Dog } from '@/lib/dog';
+import { RACCOON } from '@/lib/raccoon';
 import GenerateStep from './components/GenerateStep';
 import MintStep from './components/MintStep';
 import FightStep from './components/FightStep';
@@ -20,6 +21,10 @@ type Step = 'generate' | 'mint' | 'fight' | 'result';
 export default function Home() {
   const [currentStep, setCurrentStep] = useState<Step>('generate');
   const [generatedDog, setGeneratedDog] = useState<Dog | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [battleOutcome, setBattleOutcome] = useState<'win' | 'lose' | null>(
+    null
+  );
 
   const handleNextStep = () => {
     if (currentStep === 'generate') setCurrentStep('mint');
@@ -41,7 +46,14 @@ export default function Home() {
             <MintStep onNext={handleNextStep} dog={generatedDog} />
           </WalletContextProvider>
         )}
-        {currentStep === 'fight' && <FightStep onNext={handleNextStep} />}
+        {currentStep === 'fight' && (
+          <FightStep
+            dog={generatedDog}
+            raccoon={RACCOON}
+            onNext={handleNextStep}
+            onBattleResolved={setBattleOutcome}
+          />
+        )}
         {currentStep === 'result' && <ResultStep onNext={handleNextStep} />}
       </main>
     </div>

@@ -30,7 +30,7 @@ its animation/transition pass before we move on, not as a final catch-up step.
 - Polish pass: minting animation/feedback, error state if airdrop/balance
   insufficient.
 
-## Phase 3 — Slice: Fight
+## Phase 3 — Slice: Fight ✅ Complete
 
 - Fixed raccoon opponent stats.
 - Battle resolution logic (deterministic function of dog stats vs raccoon
