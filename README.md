@@ -36,6 +36,12 @@ That's the entire scope for this submission — one dog, one fight, one result.
 - **Google AI** — portrait image generation + bio/taunt text generation
 - **ElevenLabs** — text-to-speech for battle narration
 
+## Demo video
+
+https://github.com/user-attachments/assets/21b6a8a7-e470-4e16-8623-4ead4e7a6236
+
+[View Mint on Solana Explorer](https://explorer.solana.com/address/9C4ascegRCRoUZ7KmLBvoWyB3g1bkJofSt1yaqHjg6B6?cluster=devnet)
+
 ## Setup
 
 ### 1. Install dependencies
