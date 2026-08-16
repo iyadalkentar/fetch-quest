@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { Dog } from '@/lib/dog';
-import { RACCOON } from '@/lib/raccoon';
+import { RACCOON, RaccoonStats } from '@/lib/raccoon';
 import GenerateStep from './components/GenerateStep';
 import MintStep from './components/MintStep';
 import FightStep from './components/FightStep';
@@ -18,19 +18,40 @@ const WalletContextProvider = dynamic(
 
 type Step = 'generate' | 'mint' | 'fight' | 'result';
 
+interface BattleNarration {
+  outcome: 'win' | 'lose';
+  line: string | null;
+  audioDataUri: string | null;
+}
+
 export default function Home() {
   const [currentStep, setCurrentStep] = useState<Step>('generate');
   const [generatedDog, setGeneratedDog] = useState<Dog | null>(null);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [battleOutcome, setBattleOutcome] = useState<'win' | 'lose' | null>(
-    null
-  );
+  const [outcome, setOutcome] = useState<'win' | 'lose' | null>(null);
+  const [narrationLine, setNarrationLine] = useState<{ line: string; audioDataUri: string | null } | null>(null);
 
   const handleNextStep = () => {
     if (currentStep === 'generate') setCurrentStep('mint');
     else if (currentStep === 'mint') setCurrentStep('fight');
     else if (currentStep === 'fight') setCurrentStep('result');
   };
+
+  const handleBattleResolved = useCallback((outcomeValue: 'win' | 'lose') => {
+    setOutcome(outcomeValue);
+  }, []);
+
+  const handleNarrationReady = useCallback((result: { line: string; audioDataUri: string | null }) => {
+    setNarrationLine(result);
+  }, []);
+
+  // Compose the narration object for ResultStep only when outcome is available
+  const battleNarration: BattleNarration | null = outcome
+    ? {
+        outcome,
+        line: narrationLine?.line ?? null,
+        audioDataUri: narrationLine?.audioDataUri ?? null,
+      }
+    : null;
 
   return (
     <div className="flex flex-col flex-1 items-center justify-center min-h-screen bg-gradient-to-b from-blue-50 to-purple-50 dark:from-gray-900 dark:to-gray-800">
@@ -51,10 +72,18 @@ export default function Home() {
             dog={generatedDog}
             raccoon={RACCOON}
             onNext={handleNextStep}
-            onBattleResolved={setBattleOutcome}
+            onBattleResolved={handleBattleResolved}
+            onNarrationReady={handleNarrationReady}
           />
         )}
-        {currentStep === 'result' && <ResultStep onNext={handleNextStep} />}
+        {currentStep === 'result' && (
+          <ResultStep
+            narration={battleNarration}
+            dog={generatedDog}
+            raccoon={RACCOON}
+            onNext={handleNextStep}
+          />
+        )}
       </main>
     </div>
   );

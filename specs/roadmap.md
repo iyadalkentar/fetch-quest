@@ -39,7 +39,7 @@ its animation/transition pass before we move on, not as a final catch-up step.
 - Polish pass: make the resolution feel like an actual fight beat (not just
   an instant win/lose flash).
 
-## Phase 4 — Slice: Hear the result
+## Phase 4 — Slice: Hear the result ✅ Complete
 
 - `/api/battle` (or extend Phase 3's endpoint) — Google AI generates the
   outcome line, ElevenLabs narrates it.

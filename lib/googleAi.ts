@@ -1,7 +1,8 @@
 import { GoogleGenAI } from '@google/genai';
 import { Dog } from './dog';
+import { RaccoonStats } from './raccoon';
 
-type DogInput = Pick<Dog, 'speed' | 'bark' | 'chomp' | 'personality'>;
+export type DogInput = Pick<Dog, 'speed' | 'bark' | 'chomp' | 'personality'>;
 
 let client: GoogleGenAI | null = null;
 
@@ -72,6 +73,38 @@ export async function generateBioTaunt(dog: DogInput): Promise<string> {
   const text = response.text?.trim();
   if (!text) {
     throw new Error('Google AI returned no bio/taunt text');
+  }
+
+  return text;
+}
+
+/**
+ * Generates a short outcome line describing the result of a battle,
+ * reflecting the dog's personality and stats.
+ */
+export async function generateOutcomeLine(
+  dog: DogInput,
+  raccoon: RaccoonStats,
+  outcome: 'win' | 'lose'
+): Promise<string> {
+  const ai = getClient();
+
+  const outcomeVerb = outcome === 'win' ? 'wins' : 'loses';
+  const prompt =
+    `Write a single short, punchy 1-2 sentence outcome line for a dog-vs-raccoon ` +
+    `battle result. The dog (personality "${dog.personality}", stats: ${describeDog(dog)}) ` +
+    `${outcomeVerb} against the Feral Raccoon (stats: Speed ${raccoon.speed}, Bark ${raccoon.bark}, Chomp ${raccoon.chomp}). ` +
+    `The line should be celebratory if win, sympathetic if lose, and reflect the dog's personality. ` +
+    `Respond with only the line itself, no quotes, no extra commentary.`;
+
+  const response = await ai.models.generateContent({
+    model: 'gemini-flash-latest',
+    contents: prompt,
+  });
+
+  const text = response.text?.trim();
+  if (!text) {
+    throw new Error('Google AI returned no outcome line text');
   }
 
   return text;

@@ -7,11 +7,17 @@ import { Dog } from '@/lib/dog';
 import { RaccoonStats } from '@/lib/raccoon';
 import { resolveBattle, BattleResult } from '@/lib/battle';
 
+interface NarrationResult {
+  line: string;
+  audioDataUri: string | null;
+}
+
 interface FightStepProps {
   dog: Dog | null;
   raccoon: RaccoonStats;
   onNext: () => void;
   onBattleResolved: (outcome: 'win' | 'lose') => void;
+  onNarrationReady?: (result: NarrationResult) => void;
 }
 
 type FightPhase = 'idle' | 'charging' | 'clash' | 'stats' | 'outcome';
@@ -21,6 +27,7 @@ export default function FightStep({
   raccoon,
   onNext,
   onBattleResolved,
+  onNarrationReady,
 }: FightStepProps) {
   const [phase, setPhase] = useState<FightPhase>('idle');
   const [result, setResult] = useState<BattleResult | null>(null);
@@ -35,6 +42,41 @@ export default function FightStep({
     const battleResult = resolveBattle(dog, raccoon);
     setResult(battleResult);
     setPhase('charging');
+
+    // Fire the narration request without awaiting — this should not block animation
+    void (async () => {
+      const GENERIC_FALLBACK = `The battle is over. Your dog ${battleResult.outcome === 'win' ? 'won' : 'lost'}!`;
+      try {
+        const response = await fetch('/api/battle', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            dog: {
+              speed: dog.speed,
+              bark: dog.bark,
+              chomp: dog.chomp,
+              personality: dog.personality,
+            },
+            raccoon,
+            outcome: battleResult.outcome,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`API returned status ${response.status}`);
+        }
+
+        const data = (await response.json()) as { line: string; audioDataUri: string | null };
+        onNarrationReady?.(data);
+      } catch (error) {
+        console.error('Failed to fetch narration:', error);
+        // Use client-side fallback on fetch-level failure
+        onNarrationReady?.({
+          line: GENERIC_FALLBACK,
+          audioDataUri: null,
+        });
+      }
+    })();
   };
 
   // Progress through animation phases
