@@ -5,6 +5,8 @@ import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Dog } from '@/lib/dog';
 import { RaccoonStats } from '@/lib/raccoon';
+import { Card } from './ui/Card';
+import { Button } from './ui/Button';
 
 interface BattleNarration {
   outcome: 'win' | 'lose';
@@ -168,7 +170,6 @@ export default function ResultStep({
       {/* Portrait Display */}
       {dog && (
         <motion.div
-          className="w-full bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 border border-gray-200 dark:border-gray-700"
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{
@@ -177,7 +178,9 @@ export default function ResultStep({
             damping: 12,
             delay: 0.1,
           }}
+          className="w-full"
         >
+          <Card>
           <div className="flex flex-col items-center gap-4">
             <div className="w-full flex justify-center">
               <Image
@@ -198,12 +201,12 @@ export default function ResultStep({
               </p>
             </div>
           </div>
+          </Card>
         </motion.div>
       )}
 
       {/* Outcome Line with Loading State */}
       <motion.div
-        className="w-full bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 border border-gray-200 dark:border-gray-700"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{
@@ -212,7 +215,9 @@ export default function ResultStep({
           damping: 12,
           delay: 0.15,
         }}
+        className="w-full"
       >
+        <Card>
         <AnimatePresence mode="wait">
           {narration?.line ? (
             <motion.div
@@ -224,7 +229,7 @@ export default function ResultStep({
               className="space-y-4"
             >
               <p className="text-center text-gray-800 dark:text-gray-100 text-lg leading-relaxed italic">
-                "{narration.line}"
+                &quot;{narration.line}&quot;
               </p>
 
               {/* Audio Player */}
@@ -244,13 +249,15 @@ export default function ResultStep({
                   />
 
                   <div className="flex items-center justify-center gap-4">
-                    <button
+                    <Button
                       onClick={togglePlayPause}
-                      className="flex-shrink-0 w-12 h-12 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 text-white flex items-center justify-center hover:from-blue-700 hover:to-purple-700 transition-colors shadow-md active:scale-95"
+                      variant="gradient"
+                      size="icon"
+                      className="flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center shadow-md active:scale-95"
                       aria-label={isPlaying ? 'Pause' : 'Play'}
                     >
                       {isPlaying ? '⏸️' : '▶️'}
-                    </button>
+                    </Button>
                     <button
                       onClick={handleReplay}
                       className="flex-shrink-0 w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 flex items-center justify-center hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors active:scale-95"
@@ -264,6 +271,18 @@ export default function ResultStep({
                     Narrated by ElevenLabs
                   </p>
                 </motion.div>
+              )}
+
+              {/* Audio unavailable note (ElevenLabs failed server-side) */}
+              {!narration.audioDataUri && (
+                <motion.p
+                  className="text-center text-sm text-gray-500 dark:text-gray-400 pt-2"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.3, delay: 0.1 }}
+                >
+                  🔇 Narration audio unavailable — read the line above instead.
+                </motion.p>
               )}
             </motion.div>
           ) : (
@@ -295,6 +314,7 @@ export default function ResultStep({
             </motion.div>
           )}
         </AnimatePresence>
+        </Card>
       </motion.div>
 
       {/* Completion Message */}

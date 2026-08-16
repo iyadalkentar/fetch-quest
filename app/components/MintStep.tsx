@@ -7,6 +7,9 @@ import { LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { motion } from 'framer-motion';
 import { Dog } from '@/lib/dog';
 import { mintDog } from '@/lib/mint';
+import { Card } from './ui/Card';
+import { Button } from './ui/Button';
+import { Banner } from './ui/Banner';
 
 interface MintStepProps {
   dog: Dog | null;
@@ -218,17 +221,11 @@ export default function MintStep({ dog, onNext }: MintStepProps) {
           Mint your dog as an NFT on Solana devnet.
         </p>
         {walletConnectError && (
-          <div className="w-full px-4 py-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg">
-            <p className="text-sm text-red-800 dark:text-red-200">
-              ❌ {walletConnectError}
-            </p>
-          </div>
+          <Banner variant="error">
+            <p>❌ {walletConnectError}</p>
+          </Banner>
         )}
-        <button
-          onClick={openWalletModal}
-          disabled={connecting}
-          className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-semibold hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
-        >
+        <Button variant="gradient" onClick={openWalletModal} disabled={connecting} className="flex items-center justify-center gap-2">
           {connecting ? (
             <>
               <span className="inline-block animate-spin">⌛</span>
@@ -237,7 +234,7 @@ export default function MintStep({ dog, onNext }: MintStepProps) {
           ) : (
             'Connect Wallet'
           )}
-        </button>
+        </Button>
         <button
           onClick={onNext}
           className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:underline transition-colors"
@@ -274,10 +271,8 @@ export default function MintStep({ dog, onNext }: MintStepProps) {
       </motion.div>
 
       {/* Wallet Info Card */}
-      <motion.div
-        variants={itemVariants}
-        className="w-full bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 border border-gray-200 dark:border-gray-700"
-      >
+      <motion.div variants={itemVariants} className="w-full">
+        <Card>
         <div className="space-y-4">
           <div>
             <p className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
@@ -307,50 +302,45 @@ export default function MintStep({ dog, onNext }: MintStepProps) {
             </div>
           )}
         </div>
+        </Card>
       </motion.div>
 
       {/* Error Banner */}
       {error && state === 'error' && (
-        <motion.div
-          variants={itemVariants}
-          className="w-full px-4 py-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg"
-        >
-          <div className="space-y-2">
-            <p className="text-sm text-red-800 dark:text-red-200">
-              ❌ {error}
-            </p>
-            {error.includes('faucet.solana.com') && (
-              <a
-                href="https://faucet.solana.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm text-red-700 dark:text-red-300 hover:underline inline-block"
-              >
-                Request devnet SOL →
-              </a>
-            )}
-          </div>
+        <motion.div variants={itemVariants} className="w-full">
+          <Banner variant="error">
+            <div className="space-y-2">
+              <p>❌ {error}</p>
+              {error.includes('faucet.solana.com') && (
+                <a
+                  href="https://faucet.solana.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-red-700 dark:text-red-300 hover:underline inline-block"
+                >
+                  Request devnet SOL →
+                </a>
+              )}
+            </div>
+          </Banner>
         </motion.div>
       )}
 
       {/* Low Balance Banner */}
       {insufficientBalance && state !== 'error' && (
-        <motion.div
-          variants={itemVariants}
-          className="w-full px-4 py-3 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700 rounded-lg"
-        >
-          <p className="text-sm text-yellow-800 dark:text-yellow-200">
-            ⚠️ Insufficient SOL. Need at least {MIN_SOL_TO_MINT} SOL to mint.
-          </p>
+        <motion.div variants={itemVariants} className="w-full">
+          <Banner variant="warning">
+            <p>
+              ⚠️ Insufficient SOL. Need at least {MIN_SOL_TO_MINT} SOL to mint.
+            </p>
+          </Banner>
         </motion.div>
       )}
 
       {/* Minted State */}
       {state === 'minted' && mintAddress && (
-        <motion.div
-          variants={itemVariants}
-          className="w-full bg-green-50 dark:bg-green-900/20 rounded-lg p-6 border border-green-200 dark:border-green-700"
-        >
+        <motion.div variants={itemVariants} className="w-full">
+          <Card variant="green">
           <div className="space-y-4">
             <p className="text-center text-green-800 dark:text-green-200 font-semibold">
               ✅ Successfully minted!
@@ -372,6 +362,35 @@ export default function MintStep({ dog, onNext }: MintStepProps) {
               View on Solana Explorer →
             </a>
           </div>
+          </Card>
+        </motion.div>
+      )}
+
+      {/* Mint progress */}
+      {(state === 'pending' || state === 'confirming') && (
+        <motion.div
+          variants={itemVariants}
+          className="w-full flex flex-col items-center gap-2"
+        >
+          <div className="w-full flex items-center gap-2">
+            <div
+              className={`flex-1 h-1.5 rounded-full ${
+                state === 'pending' || state === 'confirming'
+                  ? 'bg-blue-600 dark:bg-blue-400'
+                  : 'bg-gray-200 dark:bg-gray-700'
+              }`}
+            />
+            <div
+              className={`flex-1 h-1.5 rounded-full transition-colors duration-300 ${
+                state === 'confirming'
+                  ? 'bg-blue-600 dark:bg-blue-400'
+                  : 'bg-gray-200 dark:bg-gray-700'
+              }`}
+            />
+          </div>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            {state === 'pending' ? 'Step 1 of 2: Submitting transaction...' : 'Step 2 of 2: Confirming on-chain...'}
+          </p>
         </motion.div>
       )}
 
@@ -382,10 +401,11 @@ export default function MintStep({ dog, onNext }: MintStepProps) {
       >
         {/* Request Airdrop Button */}
         {balanceKnown && insufficientBalance && state !== 'error' && (
-          <button
+          <Button
             onClick={requestAirdrop}
             disabled={isAirdropInFlight}
-            className="flex-1 sm:flex-none px-6 py-3 bg-yellow-600 text-white rounded-lg font-semibold hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+            variant="warning"
+            className="flex-1 sm:flex-none flex items-center justify-center gap-2"
           >
             {isAirdropInFlight ? (
               <>
@@ -395,15 +415,16 @@ export default function MintStep({ dog, onNext }: MintStepProps) {
             ) : (
               'Request Devnet SOL'
             )}
-          </button>
+          </Button>
         )}
 
         {/* Mint Button */}
         {state !== 'minted' && state !== 'error' && (
-          <button
+          <Button
             onClick={handleMint}
             disabled={!balanceKnown || insufficientBalance || isAirdropInFlight || state === 'pending' || state === 'confirming' || !dog}
-            className="flex-1 sm:flex-none px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-semibold hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+            variant="gradient"
+            className="flex-1 sm:flex-none flex items-center justify-center gap-2"
           >
             {state === 'pending' || state === 'confirming' ? (
               <>
@@ -413,27 +434,25 @@ export default function MintStep({ dog, onNext }: MintStepProps) {
             ) : (
               'Mint Dog'
             )}
-          </button>
+          </Button>
         )}
 
         {/* Retry Button (Error State) */}
         {state === 'error' && (
-          <button
+          <Button
             onClick={handleRetry}
-            className="flex-1 sm:flex-none px-6 py-3 bg-orange-600 text-white rounded-lg font-semibold hover:bg-orange-700 transition-colors"
+            variant="retry"
+            className="flex-1 sm:flex-none"
           >
             Retry
-          </button>
+          </Button>
         )}
 
         {/* Next Button (Minted State) */}
         {state === 'minted' && (
-          <button
-            onClick={onNext}
-            className="flex-1 sm:flex-none px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors"
-          >
+          <Button onClick={onNext} className="flex-1 sm:flex-none">
             Next
-          </button>
+          </Button>
         )}
       </motion.div>
 

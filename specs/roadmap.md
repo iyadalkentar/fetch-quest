@@ -47,7 +47,7 @@ its animation/transition pass before we move on, not as a final catch-up step.
   play button), portrait + outcome badge.
 - Polish pass: audio sync with reveal, replay control.
 
-## Phase 5 — End-to-end polish pass
+## Phase 5 — End-to-end polish pass ✅ Complete
 
 - Walk the full flow start to finish, tighten transitions between phases.
 - Error/edge states: no wallet, insufficient devnet SOL, API failures.

@@ -4,6 +4,9 @@ import { useState } from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { Dog } from '@/lib/dog';
+import { Card } from './ui/Card';
+import { Button } from './ui/Button';
+import { Banner } from './ui/Banner';
 
 interface GenerateStepProps {
   onNext: () => void;
@@ -77,17 +80,11 @@ export default function GenerateStep({
           Generate a unique dog with random stats and personality.
         </p>
         {error && (
-          <div className="w-full px-4 py-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg">
-            <p className="text-sm text-red-800 dark:text-red-200">
-              ❌ {error}
-            </p>
-          </div>
+          <Banner variant="error">
+            <p>❌ {error}</p>
+          </Banner>
         )}
-        <button
-          onClick={generateDog}
-          disabled={loading}
-          className="px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-        >
+        <Button onClick={generateDog} disabled={loading}>
           {loading ? (
             <span className="flex items-center gap-2">
               <span className="inline-block animate-spin">⌛</span>
@@ -96,7 +93,46 @@ export default function GenerateStep({
           ) : (
             'Generate'
           )}
-        </button>
+        </Button>
+
+        {/* Skeleton of the stats/portrait/bio layout, shown while the first
+            generation is in flight so the wait feels shorter. */}
+        {loading && (
+          <motion.div
+            className="w-full flex flex-col items-center gap-8"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
+          >
+            <Card className="w-full space-y-4">
+              <motion.div
+                className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded"
+                animate={{ opacity: [0.5, 0.8, 0.5] }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+              />
+              <div className="grid grid-cols-3 gap-4">
+                {[0, 1, 2].map((i) => (
+                  <motion.div
+                    key={i}
+                    className="h-10 bg-gray-200 dark:bg-gray-700 rounded"
+                    animate={{ opacity: [0.5, 0.8, 0.5] }}
+                    transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.15 }}
+                  />
+                ))}
+              </div>
+            </Card>
+            <motion.div
+              className="w-48 h-48 bg-gray-200 dark:bg-gray-700 rounded-lg"
+              animate={{ opacity: [0.5, 0.8, 0.5] }}
+              transition={{ duration: 1.5, repeat: Infinity, delay: 0.1 }}
+            />
+            <motion.div
+              className="w-full h-16 bg-gray-200 dark:bg-gray-700 rounded-lg"
+              animate={{ opacity: [0.5, 0.8, 0.5] }}
+              transition={{ duration: 1.5, repeat: Infinity, delay: 0.2 }}
+            />
+          </motion.div>
+        )}
       </div>
     );
   }
@@ -120,33 +156,27 @@ export default function GenerateStep({
 
       {/* Failure Notice */}
       {dog.generationFailed && (
-        <motion.div
-          variants={itemVariants}
-          className="w-full px-4 py-3 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700 rounded-lg"
-        >
-          <p className="text-sm text-yellow-800 dark:text-yellow-200">
-            ⚠️ AI generation unavailable — showing a placeholder. Want to retry?
-          </p>
+        <motion.div variants={itemVariants} className="w-full">
+          <Banner variant="warning">
+            <p>
+              ⚠️ AI generation unavailable — showing a placeholder. Want to retry?
+            </p>
+          </Banner>
         </motion.div>
       )}
 
       {/* Error Banner */}
       {error && (
-        <motion.div
-          variants={itemVariants}
-          className="w-full px-4 py-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg"
-        >
-          <p className="text-sm text-red-800 dark:text-red-200">
-            ❌ {error}
-          </p>
+        <motion.div variants={itemVariants} className="w-full">
+          <Banner variant="error">
+            <p>❌ {error}</p>
+          </Banner>
         </motion.div>
       )}
 
       {/* Stats Card */}
-      <motion.div
-        variants={itemVariants}
-        className="w-full bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 border border-gray-200 dark:border-gray-700"
-      >
+      <motion.div variants={itemVariants} className="w-full">
+        <Card>
         <div className="mb-4">
           <p className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
             Personality
@@ -182,6 +212,7 @@ export default function GenerateStep({
             </p>
           </div>
         </div>
+        </Card>
       </motion.div>
 
       {/* Portrait Image */}
@@ -200,13 +231,12 @@ export default function GenerateStep({
       </motion.div>
 
       {/* Bio/Taunt */}
-      <motion.div
-        variants={itemVariants}
-        className="w-full bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4 border border-purple-200 dark:border-purple-700"
-      >
-        <p className="text-center text-gray-700 dark:text-gray-300 italic">
-          &quot;{dog.bio}&quot;
-        </p>
+      <motion.div variants={itemVariants} className="w-full">
+        <Card variant="purple">
+          <p className="text-center text-gray-700 dark:text-gray-300 italic">
+            &quot;{dog.bio}&quot;
+          </p>
+        </Card>
       </motion.div>
 
       {/* Action Buttons */}
@@ -214,30 +244,29 @@ export default function GenerateStep({
         variants={itemVariants}
         className="w-full flex flex-col gap-3 sm:flex-row sm:justify-center"
       >
-        <button
+        <Button
           onClick={generateDog}
           disabled={loading}
-          className="flex-1 sm:flex-none px-6 py-3 bg-gray-600 text-white rounded-lg font-semibold hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          variant="secondary"
+          className="flex-1 sm:flex-none"
         >
           {loading ? 'Generating...' : 'Generate Another'}
-        </button>
+        </Button>
 
         {dog.generationFailed && (
-          <button
+          <Button
             onClick={generateDog}
             disabled={loading}
-            className="flex-1 sm:flex-none px-6 py-3 bg-yellow-600 text-white rounded-lg font-semibold hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            variant="warning"
+            className="flex-1 sm:flex-none"
           >
             {loading ? 'Retrying...' : 'Retry'}
-          </button>
+          </Button>
         )}
 
-        <button
-          onClick={onNext}
-          className="flex-1 sm:flex-none px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors"
-        >
+        <Button onClick={onNext} className="flex-1 sm:flex-none">
           Next
-        </button>
+        </Button>
       </motion.div>
     </motion.div>
   );

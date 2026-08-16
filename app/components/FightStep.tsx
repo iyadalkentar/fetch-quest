@@ -6,6 +6,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Dog } from '@/lib/dog';
 import { RaccoonStats } from '@/lib/raccoon';
 import { resolveBattle, BattleResult } from '@/lib/battle';
+import { Card } from './ui/Card';
+import { Button } from './ui/Button';
+import { Banner } from './ui/Banner';
 
 interface NarrationResult {
   line: string;
@@ -33,6 +36,52 @@ export default function FightStep({
   const [result, setResult] = useState<BattleResult | null>(null);
   const [fightStarted, setFightStarted] = useState(false);
   const [currentStatIndex, setCurrentStatIndex] = useState(0);
+  const [narrationError, setNarrationError] = useState(false);
+  const [narrationRetrying, setNarrationRetrying] = useState(false);
+
+  const fetchNarration = async (battleResult: BattleResult, isRetry: boolean) => {
+    if (!dog) return;
+    if (isRetry) setNarrationRetrying(true);
+
+    const GENERIC_FALLBACK = `The battle is over. Your dog ${battleResult.outcome === 'win' ? 'won' : 'lost'}!`;
+    try {
+      const response = await fetch('/api/battle', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          dog: {
+            speed: dog.speed,
+            bark: dog.bark,
+            chomp: dog.chomp,
+            personality: dog.personality,
+          },
+          raccoon,
+          outcome: battleResult.outcome,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`API returned status ${response.status}`);
+      }
+
+      const data = (await response.json()) as { line: string; audioDataUri: string | null };
+      setNarrationError(false);
+      onNarrationReady?.(data);
+    } catch (error) {
+      console.error('Failed to fetch narration:', error);
+      setNarrationError(true);
+      // Use client-side fallback so the result screen isn't stuck waiting
+      // forever — the retry banner still offers a way to get the real line.
+      if (!isRetry) {
+        onNarrationReady?.({
+          line: GENERIC_FALLBACK,
+          audioDataUri: null,
+        });
+      }
+    } finally {
+      if (isRetry) setNarrationRetrying(false);
+    }
+  };
 
   // Handle the fight start
   const handleFightClick = () => {
@@ -44,39 +93,12 @@ export default function FightStep({
     setPhase('charging');
 
     // Fire the narration request without awaiting — this should not block animation
-    void (async () => {
-      const GENERIC_FALLBACK = `The battle is over. Your dog ${battleResult.outcome === 'win' ? 'won' : 'lost'}!`;
-      try {
-        const response = await fetch('/api/battle', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            dog: {
-              speed: dog.speed,
-              bark: dog.bark,
-              chomp: dog.chomp,
-              personality: dog.personality,
-            },
-            raccoon,
-            outcome: battleResult.outcome,
-          }),
-        });
+    void fetchNarration(battleResult, false);
+  };
 
-        if (!response.ok) {
-          throw new Error(`API returned status ${response.status}`);
-        }
-
-        const data = (await response.json()) as { line: string; audioDataUri: string | null };
-        onNarrationReady?.(data);
-      } catch (error) {
-        console.error('Failed to fetch narration:', error);
-        // Use client-side fallback on fetch-level failure
-        onNarrationReady?.({
-          line: GENERIC_FALLBACK,
-          audioDataUri: null,
-        });
-      }
-    })();
+  const handleRetryNarration = () => {
+    if (!result) return;
+    void fetchNarration(result, true);
   };
 
   // Progress through animation phases
@@ -160,8 +182,9 @@ export default function FightStep({
             damping: 12,
             delay: 0.2,
           }}
-          className="w-full bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 border border-gray-200 dark:border-gray-700"
+          className="w-full"
         >
+          <Card>
           <div className="grid grid-cols-2 gap-8">
             {/* Dog */}
             <div className="flex flex-col items-center gap-3">
@@ -203,10 +226,11 @@ export default function FightStep({
               </p>
             </div>
           </div>
+          </Card>
         </motion.div>
 
         {/* Fight button */}
-        <motion.button
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{
@@ -215,12 +239,16 @@ export default function FightStep({
             damping: 12,
             delay: 0.4,
           }}
-          onClick={handleFightClick}
-          disabled={fightStarted}
-          className="px-8 py-3 bg-gradient-to-r from-red-600 to-orange-600 text-white rounded-lg font-semibold hover:from-red-700 hover:to-orange-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform active:scale-95"
         >
-          Fight!
-        </motion.button>
+          <Button
+            onClick={handleFightClick}
+            disabled={fightStarted}
+            variant="fight"
+            size="lg"
+          >
+            Fight!
+          </Button>
+        </motion.div>
       </div>
     );
   }
@@ -313,11 +341,12 @@ export default function FightStep({
             {/* Speed */}
             {currentStatIndex >= 0 && (
               <motion.div
-                className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 shadow"
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.3 }}
+                className="w-full"
               >
+                <Card className="p-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase">
                     Speed
@@ -354,17 +383,19 @@ export default function FightStep({
                     {result.statDeltas.speed}
                   </div>
                 </div>
+                </Card>
               </motion.div>
             )}
 
             {/* Bark */}
             {currentStatIndex >= 1 && (
               <motion.div
-                className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 shadow"
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.3 }}
+                className="w-full"
               >
+                <Card className="p-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase">
                     Bark
@@ -401,17 +432,19 @@ export default function FightStep({
                     {result.statDeltas.bark}
                   </div>
                 </div>
+                </Card>
               </motion.div>
             )}
 
             {/* Chomp */}
             {currentStatIndex >= 2 && (
               <motion.div
-                className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 shadow"
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.3 }}
+                className="w-full"
               >
+                <Card className="p-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase">
                     Chomp
@@ -448,6 +481,7 @@ export default function FightStep({
                     {result.statDeltas.chomp}
                   </div>
                 </div>
+                </Card>
               </motion.div>
             )}
           </motion.div>
@@ -500,11 +534,37 @@ export default function FightStep({
         )}
       </AnimatePresence>
 
+      {/* Narration failure banner */}
+      <AnimatePresence>
+        {phase === 'outcome' && narrationError && (
+          <motion.div
+            className="w-full"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 100, damping: 12 }}
+          >
+            <Banner variant="warning">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+                <p>⚠️ Couldn&apos;t narrate the result. A generic line was used instead.</p>
+                <Button
+                  variant="retry"
+                  onClick={handleRetryNarration}
+                  disabled={narrationRetrying}
+                  className="whitespace-nowrap"
+                >
+                  {narrationRetrying ? 'Retrying...' : 'Retry narration'}
+                </Button>
+              </div>
+            </Banner>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Next button - only appears after outcome */}
       <AnimatePresence>
         {phase === 'outcome' && (
-          <motion.button
-            onClick={onNext}
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{
@@ -512,10 +572,9 @@ export default function FightStep({
               stiffness: 100,
               damping: 12,
             }}
-            className="px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors"
           >
-            Next
-          </motion.button>
+            <Button onClick={onNext}>Next</Button>
+          </motion.div>
         )}
       </AnimatePresence>
     </motion.div>
