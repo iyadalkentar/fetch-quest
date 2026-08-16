@@ -20,7 +20,7 @@ its animation/transition pass before we move on, not as a final catch-up step.
 - UI: "Generate" button → animated reveal of stats card + portrait + taunt.
 - Polish pass: loading state while Google AI responds, reveal animation.
 
-## Phase 2 — Slice: Mint it
+## Phase 2 — Slice: Mint it ✅ Complete
 
 - Wallet connect (Phantom/Solflare via wallet-adapter), devnet.
 - `/api/mint` — Metaplex mint with the dog's image + stats/personality as

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { useWalletModal } from '@solana/wallet-adapter-react-ui';
 import { LAMPORTS_PER_SOL } from '@solana/web3.js';
@@ -20,8 +20,65 @@ const AIRDROP_AMOUNT = 1; // 1 SOL
 
 export default function MintStep({ dog, onNext }: MintStepProps) {
   const { connection } = useConnection();
-  const { publicKey, connected } = useWallet();
-  const { setVisible: setWalletModalVisible } = useWalletModal();
+  const { wallet, publicKey, connected, connecting, connect, sendTransaction } =
+    useWallet();
+  const { visible: walletModalVisible, setVisible: setWalletModalVisible } =
+    useWalletModal();
+
+  // The wallet-adapter modal only *selects* a wallet on click; it never calls
+  // connect() itself (that only happens automatically when autoConnect is on,
+  // which we deliberately keep off). This flag makes sure we only auto-connect
+  // right after the user explicitly opened the modal this session — not just
+  // because a wallet name persisted in localStorage from a prior visit.
+  const hasRequestedConnectRef = useRef(false);
+  const wasModalVisibleRef = useRef(false);
+  const [walletConnectError, setWalletConnectError] = useState<string | null>(
+    null
+  );
+
+  const openWalletModal = () => {
+    hasRequestedConnectRef.current = true;
+    setWalletConnectError(null);
+    setWalletModalVisible(true);
+  };
+
+  useEffect(() => {
+    // Trigger on the modal's visible:true -> false transition rather than on
+    // `wallet` changing: re-selecting an already-selected wallet (e.g. one
+    // persisted in localStorage from a prior visit) is a no-op in
+    // wallet-adapter-react's own selection logic, so `wallet`'s reference
+    // never changes even though the modal did close after a real click.
+    const wasVisible = wasModalVisibleRef.current;
+    wasModalVisibleRef.current = walletModalVisible;
+    if (!wasVisible || walletModalVisible) return;
+
+    if (!hasRequestedConnectRef.current) return;
+    hasRequestedConnectRef.current = false;
+
+    if (!wallet || connected || connecting) return;
+
+    const run = async () => {
+      // A freshly-created adapter can already report `connected: true` if
+      // the wallet extension (e.g. Phantom via the Wallet Standard) has
+      // persisted trust for this origin from an earlier session — before
+      // our React state has ever seen this adapter instance's 'connect'
+      // event. wallet-adapter-react's connect() silently no-ops in that
+      // case (it only updates state in response to a genuine 'connect'
+      // event), leaving our UI stuck showing "not connected" forever.
+      // Forcing a disconnect first guarantees connect() actually runs.
+      if (wallet.adapter.connected) {
+        await wallet.adapter.disconnect().catch(() => {});
+      }
+      await connect();
+    };
+
+    run().catch((err) => {
+      console.error('Wallet connect failed:', err);
+      setWalletConnectError(
+        err instanceof Error ? err.message : 'Failed to connect wallet'
+      );
+    });
+  }, [walletModalVisible, wallet, connected, connecting, connect]);
 
   const [balance, setBalance] = useState<number | null>(null);
   const [state, setState] = useState<MintState>('idle');
@@ -102,7 +159,12 @@ export default function MintStep({ dog, onNext }: MintStepProps) {
     try {
       // Once lib/mint.ts has a real implementation with a submit->confirm flow,
       // call setState('confirming') here after the transaction is submitted but before confirmation
-      const result = await mintDog(dog, publicKey.toString());
+      const result = await mintDog(
+        dog,
+        publicKey.toString(),
+        connection,
+        sendTransaction
+      );
       setMintAddress(result.mintAddress);
       setState('minted');
     } catch (err) {
@@ -155,11 +217,32 @@ export default function MintStep({ dog, onNext }: MintStepProps) {
         <p className="text-lg text-gray-600 dark:text-gray-300 text-center max-w-md">
           Mint your dog as an NFT on Solana devnet.
         </p>
+        {walletConnectError && (
+          <div className="w-full px-4 py-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg">
+            <p className="text-sm text-red-800 dark:text-red-200">
+              ❌ {walletConnectError}
+            </p>
+          </div>
+        )}
         <button
-          onClick={() => setWalletModalVisible(true)}
-          className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-semibold hover:from-blue-700 hover:to-purple-700 transition-colors"
+          onClick={openWalletModal}
+          disabled={connecting}
+          className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-semibold hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
         >
-          Connect Wallet
+          {connecting ? (
+            <>
+              <span className="inline-block animate-spin">⌛</span>
+              Connecting...
+            </>
+          ) : (
+            'Connect Wallet'
+          )}
+        </button>
+        <button
+          onClick={onNext}
+          className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:underline transition-colors"
+        >
+          Skip minting for now
         </button>
       </div>
     );
@@ -353,6 +436,17 @@ export default function MintStep({ dog, onNext }: MintStepProps) {
           </button>
         )}
       </motion.div>
+
+      {/* Skip Link */}
+      {state !== 'minted' && state !== 'pending' && state !== 'confirming' && (
+        <motion.button
+          variants={itemVariants}
+          onClick={onNext}
+          className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:underline transition-colors"
+        >
+          Skip minting for now
+        </motion.button>
+      )}
     </motion.div>
   );
 }
